@@ -69,3 +69,29 @@ module grid_cell (
     end
 
 endmodule
+
+module grid_array(
+    input wire clk,
+    input wire reset,
+    input wire [99:0] shot,          // Individual shot signals for each cell
+    input wire [99:0] is_ship,       // Individual ship position signals for each cell
+    input wire [99:0] ship_sunk,     // Individual sunk signals for each cell
+    output wire [3:0] cell_state[99:0] // Individual cell states
+);
+
+genvar i;
+
+generate
+    for (i = 0; i < 100; i = i + 1) begin : grid_cells
+        grid_cell cell_inst(
+            .clk(clk),
+            .reset(reset),
+            .shot(shot[i]),
+            .is_ship(is_ship[i]),
+            .ship_sunk(ship_sunk[i]),
+            .cell_state(cell_state[i])
+        );
+    end
+endgenerate
+
+endmodule
