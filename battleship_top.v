@@ -3,7 +3,7 @@ module battleship_top(
     input wire reset,
     input wire start_btn,
     input wire reset_btn,
-    input wire btn_up, btn_down, btn_left, btn_right, btn_select, // Cursor controls
+    input wire btn_up, btn_down, btn_left, btn_right, btn_select, 
     output wire [399:0] cell_state_flat 
 );
 
@@ -32,7 +32,7 @@ cursor_control cursor(
     .btn_down(btn_down),
     .btn_left(btn_left),
     .btn_right(btn_right),
-    .btn_center(btn_select),
+    .btn_select(btn_select),
     .selected_cell(selected_cell),
     .shot_select(shot_select)
 );
@@ -41,7 +41,7 @@ cursor_control cursor(
 battleship_fsm fsm(
     .clk(clk),
     .reset(reset),
-    .start(start_btn),
+    .start_btn(start_btn),
     .shot_select(shot_select),
     .hit(hit_detected),
     .all_ships_sunk(all_ships_sunk),
@@ -69,24 +69,24 @@ generate
 endgenerate
 
 hit_detector hit_det(
-    .clk(clk),
-    .reset(reset),
     .shot(shot_select),
-    .cursor_row(cursor_row),
-    .cursor_col(cursor_col),
+    .is_ship(is_ship),
+    .selected_cell(selected_cell),
     .hit(hit_detected)
 );
 
 
-// Ship status logic (determine sunk ships)
-ship_status ship_stat(
+
+wire [2:0] seg_hit = {is_ship[22], is_ship[21], is_ship[20]};
+wire ship_sunk;
+
+ship_status #(.SHIP_SIZE(3)) ship_stat (
     .clk(clk),
-    .reset(reset || restart_pulse),
-    .shot_signals(shot_signals),
-    .is_ship(is_ship),
-    .ship_sunk(ship_sunk),
-    .all_ships_sunk(all_ships_sunk)
+    .reset(reset),
+    .seg_hit(seg_hit),
+    .ship_sunk(ship_sunk)
 );
+
 
 // Parameters
 localparam MAX_TURNS = 15; // or desired number of turns

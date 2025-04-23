@@ -74,7 +74,7 @@ module grid_array(
     input wire clk,
     input wire reset,
     input wire [99:0] shot,          // Individual shot signals for each cell
-    input reg [99:0] is_ship,       // Individual ship position signals for each cell
+    input wire [99:0] is_ship,       // Individual ship position signals for each cell
     input wire [99:0] ship_sunk,     // Individual sunk signals for each cell
     output wire [399:0] cell_state_flat 
 );
