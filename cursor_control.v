@@ -14,7 +14,11 @@ module cursor_control (
     input  wire        btn_right,   // Directional button: right
     output reg  [3:0]  cursor_row,  // Row index (0 to 9)
     output reg  [3:0]  cursor_col   // Column index (0 to 9)
+    input wire btn_select,
+    output wire [6:0] selected_cell,
+    output wire shot_select
 );
+
 
     // Define grid boundaries for a 10×10 grid.
     localparam MIN_INDEX = 4'd0;

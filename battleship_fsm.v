@@ -9,6 +9,9 @@ module battleship_fsm (
     input  wire       turns_exhausted, // No turns remaining
     output reg  [4:0] current_state,   // One-hot encoding for the game state
     output reg        restart_pulse    // One-cycle pulse to indicate game restart
+    output wire [4:0] current_state,
+    output wire restart_pulse
+
 );
 
     // One-hot encoded states
