@@ -12,7 +12,7 @@ module battleship_tb;
     reg btn_right;
     reg btn_select;
 
-    wire [3:0] cell_states [99:0];
+    wire [399:0] cell_state_flat;
 
     // Instantiate the Battleship Top Module
     battleship_top uut (
@@ -25,8 +25,16 @@ module battleship_tb;
         .btn_left(btn_left),
         .btn_right(btn_right),
         .btn_select(btn_select),
-        .cell_states(cell_states)
+        .cell_state_flat(cell_state_flat)
     );
+
+    // Monitor selected cell state for debug
+    wire [6:0] sel_cell = uut.selected_cell;
+    wire [3:0] current_cell_state = cell_state_flat[sel_cell*4 +: 4];
+
+    initial begin
+        $monitor("Time=%0t | Selected Cell=%0d | State=%b", $time, sel_cell, current_cell_state);
+    end
 
     // Clock generation
     always #5 clk = ~clk; // 100MHz clock frequency

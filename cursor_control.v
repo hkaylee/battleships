@@ -1,45 +1,47 @@
-
-//////////////////////////////////////////////////
-// Module: cursor_control
-//////////////////////////////////////////////////
-// This module updates the cursor position on a 10×10 grid.
-
+`timescale 1ns / 1ps
 module cursor_control (
-    input  wire        clk,         // System clock
-    input  wire        reset,       // Asynchronous system reset
-    input  wire        player_turn, // High when the game FSM is in player turn state
-    input  wire        btn_up,      // Directional button: up
-    input  wire        btn_down,    // Directional button: down
-    input  wire        btn_left,    // Directional button: left
-    input  wire        btn_right,   // Directional button: right
-    output reg  [3:0]  cursor_row,  // Row index (0 to 9)
-    output reg  [3:0]  cursor_col,   // Column index (0 to 9)
-    input wire btn_select,
-    output wire [6:0] selected_cell,
-    output wire shot_select
+    input  wire        clk,          // System clock
+    input  wire        reset,        // Asynchronous reset
+    input  wire        btn_up,       // Move cursor up
+    input  wire        btn_down,     // Move cursor down
+    input  wire        btn_left,     // Move cursor left
+    input  wire        btn_right,    // Move cursor right
+    input  wire        btn_select,   // Fire shot
+    output wire [6:0]  selected_cell,// 0-99 flat index
+    output reg         shot_select   // One-cycle pulse on select
 );
 
+    // Internal row/col registers
+    reg [3:0] cursor_row;
+    reg [3:0] cursor_col;
+    reg       btn_select_prev;
 
-    // Define grid boundaries for a 10×10 grid.
-    localparam MIN_INDEX = 4'd0;
-    localparam MAX_INDEX = 4'd9;
+    // Compute flat index = row*10 + col
+    assign selected_cell = cursor_row * 4'd10 + cursor_col;
+
+    // Cursor movement logic
     always @(posedge clk or posedge reset) begin
         if (reset) begin
-            cursor_row <= MIN_INDEX;
-            cursor_col <= MIN_INDEX;
+            cursor_row <= 4'd0;
+            cursor_col <= 4'd0;
+        end else begin
+            // Vertical
+            if      (btn_up    && cursor_row > 0)  cursor_row <= cursor_row - 1;
+            else if (btn_down  && cursor_row < 9)  cursor_row <= cursor_row + 1;
+            // Horizontal
+            if      (btn_left  && cursor_col > 0)  cursor_col <= cursor_col - 1;
+            else if (btn_right && cursor_col < 9)  cursor_col <= cursor_col + 1;
         end
-        else if (player_turn) begin
-            // Check vertical movement first.
-            if (btn_up && (cursor_row > MIN_INDEX))
-                cursor_row <= cursor_row - 1;
-            else if (btn_down && (cursor_row < MAX_INDEX))
-                cursor_row <= cursor_row + 1;
+    end
 
-            // Check horizontal movement.
-            if (btn_left && (cursor_col > MIN_INDEX))
-                cursor_col <= cursor_col - 1;
-            else if (btn_right && (cursor_col < MAX_INDEX))
-                cursor_col <= cursor_col + 1;
+    // Generate one-cycle shot_select pulse on btn_select rising edge
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            btn_select_prev <= 1'b0;
+            shot_select     <= 1'b0;
+        end else begin
+            shot_select     <= btn_select & ~btn_select_prev;
+            btn_select_prev <= btn_select;
         end
     end
 

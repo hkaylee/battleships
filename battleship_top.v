@@ -3,10 +3,9 @@ module battleship_top(
     input wire reset,
     input wire start_btn,
     input wire reset_btn,
-    input wire btn_up, btn_down, btn_left, btn_right, btn_select, 
-    output wire [399:0] cell_state_flat 
+    input wire btn_up, btn_down, btn_left, btn_right, btn_select
 );
-
+wire [399:0] cell_state_flat;
 // Internal Signals
 wire [6:0] selected_cell;
 wire shot_select;
@@ -42,6 +41,7 @@ battleship_fsm fsm(
     .clk(clk),
     .reset(reset),
     .start_btn(start_btn),
+    .reset_btn(reset_btn),
     .shot_select(shot_select),
     .hit(hit_detected),
     .all_ships_sunk(all_ships_sunk),
@@ -78,7 +78,6 @@ hit_detector hit_det(
 
 
 wire [2:0] seg_hit = {is_ship[22], is_ship[21], is_ship[20]};
-wire ship_sunk;
 
 ship_status #(.SHIP_SIZE(3)) ship_stat (
     .clk(clk),
