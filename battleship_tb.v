@@ -2,6 +2,7 @@
 
 module battleship_tb;
 
+    // Inputs
     reg clk;
     reg reset;
     reg start_btn;
@@ -12,9 +13,10 @@ module battleship_tb;
     reg btn_right;
     reg btn_select;
 
+    // Outputs
     wire [399:0] cell_state_flat;
 
-    // Instantiate the Battleship Top Module
+    // Instantiate the DUT
     battleship_top uut (
         .clk(clk),
         .reset(reset),
@@ -28,19 +30,27 @@ module battleship_tb;
         .cell_state_flat(cell_state_flat)
     );
 
-    // Monitor selected cell state for debug
+    // Generate a clock: 100 MHz
+    always #5 clk = ~clk;
+
+    // Watch selected cell
     wire [6:0] sel_cell = uut.selected_cell;
-    wire [3:0] current_cell_state = cell_state_flat[sel_cell*4 +: 4];
+    wire [3:0] cell_state = cell_state_flat[sel_cell*4 +: 4];
+    wire [7:0] turns_remaining = uut.turns_remaining;
+    wire [4:0] game_state = uut.game_state;
+    wire shot_select = uut.shot_select;
+    wire hit = uut.hit_detected;
+    wire shot = uut.shot_select;
+
+
+    // Debug display
+initial begin
+    $display("Time\tSelCell\tState\tTurnsLeft\tGameState");
+    $monitor("%t\t%0d\t%b\t%0d\t%b", $time, sel_cell, cell_state, turns_remaining, game_state);
+end
 
     initial begin
-        $monitor("Time=%0t | Selected Cell=%0d | State=%b", $time, sel_cell, current_cell_state);
-    end
-
-    // Clock generation
-    always #5 clk = ~clk; // 100MHz clock frequency
-
-    initial begin
-        // Initial reset
+        // Initialize signals
         clk = 0;
         reset = 1;
         start_btn = 0;
@@ -51,28 +61,35 @@ module battleship_tb;
         btn_right = 0;
         btn_select = 0;
 
-        // Release reset
+        // Reset pulse
         #20 reset = 0;
 
         // Start game
         #20 start_btn = 1;
         #10 start_btn = 0;
 
-        // Simulate cursor movements and selections
+        // Move to the right 3 times
         #30 btn_right = 1; #10 btn_right = 0;
         #10 btn_right = 1; #10 btn_right = 0;
-        #10 btn_down = 1;  #10 btn_down = 0;
-        #10 btn_select = 1; #10 btn_select = 0; // Fire shot at selected cell
+        #10 btn_right = 1; #10 btn_right = 0;
 
-        // Additional moves/shots
-        #50 btn_left = 1;  #10 btn_left = 0;
-        #10 btn_up = 1;    #10 btn_up = 0;
+        // Move down 2 times
+        #10 btn_down = 1; #10 btn_down = 0;
+        #10 btn_down = 1; #10 btn_down = 0;
+
+        // Fire shot
         #10 btn_select = 1; #10 btn_select = 0;
 
-        // Wait and then restart
-        #200 reset_btn = 1; #10 reset_btn = 0;
+        // Move and fire again
+        #30 btn_left = 1; #10 btn_left = 0;
+        #10 btn_up = 1; #10 btn_up = 0;
+        #10 btn_select = 1; #10 btn_select = 0;
 
-        #100 $stop; // End simulation
+        // Simulate game restart
+        #100 reset_btn = 1; #10 reset_btn = 0;
+
+        // Wait and stop
+        #200 $finish;
     end
 
 endmodule

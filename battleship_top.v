@@ -3,9 +3,9 @@ module battleship_top(
     input wire reset,
     input wire start_btn,
     input wire reset_btn,
-    input wire btn_up, btn_down, btn_left, btn_right, btn_select
+    input wire btn_up, btn_down, btn_left, btn_right, btn_select,
+    output wire [399:0] cell_state_flat
 );
-wire [399:0] cell_state_flat;
 // Internal Signals
 wire [6:0] selected_cell;
 wire shot_select;
@@ -18,12 +18,9 @@ wire restart_pulse;
 wire [4:0] game_state;
 reg [7:0] turns_remaining;
 reg [99:0] is_ship;
-wire [3:0] cursor_row = selected_cell / 10;
-wire [3:0] cursor_col = selected_cell % 10;
 
 
 
-// Cursor control instance
 cursor_control cursor(
     .clk(clk),
     .reset(reset),
@@ -35,6 +32,8 @@ cursor_control cursor(
     .selected_cell(selected_cell),
     .shot_select(shot_select)
 );
+
+
 
 // FSM instance
 battleship_fsm fsm(
@@ -50,23 +49,14 @@ battleship_fsm fsm(
 );
 assign shot_signals = (shot_select && game_state == 5'b00100) ? (100'b1 << selected_cell) : 100'b0;
 
-// Grid cells instantiation
-genvar i;
-generate
-    for (i = 0; i < 100; i = i + 1) begin : grid_cells
-        wire [3:0] state;
-        assign cell_state_flat[i*4 +: 4] = state;
-
-        grid_cell cell_inst(
-            .clk(clk),
-            .reset(reset),
-            .shot(shot_signals[i]),
-            .is_ship(is_ship[i]),
-            .ship_sunk(ship_sunk[i]),
-            .cell_state(state)
-        );
-    end
-endgenerate
+grid_array grid_inst (
+    .clk(clk),
+    .reset(reset),
+    .shot(shot_signals),
+    .is_ship(is_ship),
+    .ship_sunk(ship_sunk),
+    .cell_state_flat(cell_state_flat)
+);
 
 hit_detector hit_det(
     .shot(shot_select),
@@ -113,7 +103,7 @@ always @(posedge clk or posedge reset or posedge restart_pulse) begin
             end
             
             5'b01000: begin // EVALUATE_SHOT STATE
-                if (shot_select && turns_remaining > 0)
+                if (turns_remaining > 0)
                     turns_remaining <= turns_remaining - 1;
             end
             
