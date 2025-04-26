@@ -22,43 +22,108 @@
 // Description: Port from NEXYS3 to NEXYS4
 //////////////////////////////////////////////////////////////////////////////////
 module vga_top(
-	input ClkPort,
-	input BtnC,
-	input BtnU,
-	
-	//VGA signal
-	output hSync, vSync,
-	output [3:0] vgaR, vgaG, vgaB,
-	
-	//SSG signal 
-	output An0, An1, An2, An3, An4, An5, An6, An7,
-	output Ca, Cb, Cc, Cd, Ce, Cf, Cg, Dp,
-	
-	//output MemOE, MemWR, RamCS, 
-	output QuadSpiFlashCS
-	);
-	
-	wire bright;
-	wire[9:0] hc, vc;
-	wire[15:0] score;
-	wire [6:0] ssdOut;
-	wire [3:0] anode;
-	wire [11:0] rgb;
-	display_controller dc(.clk(ClkPort), .hSync(hSync), .vSync(vSync), .bright(bright), .hCount(hc), .vCount(vc));
-	vga_bitchange vbc(.clk(ClkPort), .bright(bright), .button(BtnU), .hCount(hc), .vCount(vc), .rgb(rgb), .score(score));
-	counter cnt(.clk(ClkPort), .displayNumber(score), .anode(anode), .ssdOut(ssdOut));
-	
-	assign Dp = 1;
-	assign {Ca, Cb, Cc, Cd, Ce, Cf, Cg} = ssdOut[6 : 0];
+    input  wire        ClkPort,
+    // four‐way direction buttons for sprite movement
+    input  wire        BtnL,
+    input  wire        BtnR,
+    input  wire        BtnU,
+    input  wire        BtnD,
+
+    // VGA outputs
+    output wire        hSync,
+    output wire        vSync,
+    output wire [3:0]  vgaR,
+    output wire [3:0]  vgaG,
+    output wire [3:0]  vgaB,
+
+    // Seven‐segment outputs
+    output wire        An0,
+    output wire        An1,
+    output wire        An2,
+    output wire        An3,
+    output wire        An4,
+    output wire        An5,
+    output wire        An6,
+    output wire        An7,
+    output wire        Ca,
+    output wire        Cb,
+    output wire        Cc,
+    output wire        Cd,
+    output wire        Ce,
+    output wire        Cf,
+    output wire        Cg,
+    output wire        Dp,
+
+    // Flash chip disable
+    output wire        QuadSpiFlashCS
+);
+
+    //––––––––––––––––––––––––––––––––––––––––––
+    // Internal nets
+    //––––––––––––––––––––––––––––––––––––––––––
+    wire        bright;
+    wire [9:0]  hc, vc;
+    wire [11:0] rgb;        // from vga_bitchange
+    wire [15:0] score;
+    wire [6:0]  ssdOut;
+    wire [3:0]  anode;
+
+    //––––––––––––––––––––––––––––––––––––––––––
+    // VGA timing generator
+    //––––––––––––––––––––––––––––––––––––––––––
+    display_controller dc (
+      .clk    (ClkPort),
+      .hSync  (hSync),
+      .vSync  (vSync),
+      .bright (bright),
+      .hCount (hc),
+      .vCount (vc)
+    );
+
+    //––––––––––––––––––––––––––––––––––––––––––
+    // Grid + sprite cursor logic
+    //––––––––––––––––––––––––––––––––––––––––––
+    vga_bitchange vbc (
+      .clk    (ClkPort),
+      .bright (bright),
+      .hCount (hc),
+      .vCount (vc),
+      .btn_l  (BtnL),
+      .btn_r  (BtnR),
+      .btn_u  (BtnU),
+      .btn_d  (BtnD),
+      .rgb    (rgb),
+      .score  (score)
+    );
+
+    //––––––––––––––––––––––––––––––––––––––––––
+    // Score → seven‐segment decoder
+    //––––––––––––––––––––––––––––––––––––––––––
+    counter cnt (
+      .clk           (ClkPort),
+      .displayNumber (score),
+      .anode         (anode),
+      .ssdOut        (ssdOut)
+    );
+
+    //––––––––––––––––––––––––––––––––––––––––––
+    // Seven‐segment wiring
+    //––––––––––––––––––––––––––––––––––––––––––
+    assign Dp = 1'b1;
+    assign {Ca, Cb, Cc, Cd, Ce, Cf, Cg} = ssdOut;
+    // only 4 digits used; pad upper 4 off
     assign {An7, An6, An5, An4, An3, An2, An1, An0} = {4'b1111, anode};
 
-	
-	assign vgaR = rgb[11 : 8];
-	assign vgaG = rgb[7  : 4];
-	assign vgaB = rgb[3  : 0];
-	
-	// disable mamory ports
-	//assign {MemOE, MemWR, RamCS, QuadSpiFlashCS} = 4'b1111;
-	assign QuadSpiFlashCS = 1'b1;
+    //––––––––––––––––––––––––––––––––––––––––––
+    // RGB(12) → VGA(4)
+    //––––––––––––––––––––––––––––––––––––––––––
+    assign vgaR = rgb[11:8];
+    assign vgaG = rgb[7:4];
+    assign vgaB = rgb[3:0];
+
+    //––––––––––––––––––––––––––––––––––––––––––
+    // Disable flash chip
+    //––––––––––––––––––––––––––––––––––––––––––
+    assign QuadSpiFlashCS = 1'b1;
 
 endmodule
