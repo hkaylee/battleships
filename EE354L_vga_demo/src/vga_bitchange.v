@@ -18,82 +18,101 @@ module vga_bitchange(
                    BLUE  = 12'h00F;
 
   // Grid parameters
-  localparam integer GRID_SIZE   = 10,
-                     CELL_WIDTH  = 64,
-                     CELL_HEIGHT = 48,
-                     GRID_LEFT   = 144,
-                     GRID_TOP    = 35,
-                     LINE_THICK  = 1;
+  localparam integer GRID_SIZE    = 10,
+                     CELL_WIDTH   = 64,
+                     CELL_HEIGHT  = 48,
+                     GRID_LEFT    = 144,
+                     GRID_TOP     = 35,
+                     LINE_THICK   = 1;
 
   // Sprite parameters
   localparam integer SPRITE_W = 64,
                      SPRITE_H = 48;
 
-  //––––––––––––––––––––––––––––––––––––––––––––––––
-  // 0) Edge-detect each button
-  //––––––––––––––––––––––––––––––––––––––––––––––––
-  reg btn_l_d, btn_r_d, btn_u_d, btn_d_d;
-  always @(posedge clk) begin
-    btn_l_d <= btn_l;
-    btn_r_d <= btn_r;
-    btn_u_d <= btn_u;
-    btn_d_d <= btn_d;
-  end
-  wire btn_l_edge =  btn_l & ~btn_l_d;
-  wire btn_r_edge =  btn_r & ~btn_r_d;
-  wire btn_u_edge =  btn_u & ~btn_u_d;
-  wire btn_d_edge =  btn_d & ~btn_d_d;
-
-  //––––––––––––––––––––––––––––––––––––––––––––––––
-  // 1) Track sprite position in grid‐cell coords (edge-only + debounce)
-  //––––––––––––––––––––––––––––––––––––––––––––––––
-  reg [3:0] sprite_col = 0;
-  reg [3:0] sprite_row = 0;
-  reg [19:0] cooldown = 0;  // cooldown counter for debouncing
+  //------------------------------------------------
+  // 0) Button debouncing with multi-stage sampling
+  //------------------------------------------------
+  reg [2:0] btn_l_hist, btn_r_hist, btn_u_hist, btn_d_hist;
+  reg btn_l_debounced, btn_r_debounced, btn_u_debounced, btn_d_debounced;
+  reg btn_l_prev,      btn_r_prev,      btn_u_prev,      btn_d_prev;
+  
+  reg [15:0] btn_sample_counter = 0;
+  wire       btn_sample_tick    = (btn_sample_counter == 0);
 
   always @(posedge clk) begin
-    if (cooldown != 0)
-      cooldown <= cooldown - 1;
-    else begin
-      if (btn_l_edge && sprite_col > 0) begin
-        sprite_col <= sprite_col - 1;
-        cooldown <= 500_000;  // ~5ms debounce
-      end
-      else if (btn_r_edge && sprite_col < GRID_SIZE-1) begin
-        sprite_col <= sprite_col + 1;
-        cooldown <= 500_000;
-      end
+    btn_sample_counter <= btn_sample_counter + 1;
+    if (btn_sample_tick) begin
+      btn_l_hist <= {btn_l_hist[1:0], btn_l};
+      btn_r_hist <= {btn_r_hist[1:0], btn_r};
+      btn_u_hist <= {btn_u_hist[1:0], btn_u};
+      btn_d_hist <= {btn_d_hist[1:0], btn_d};
 
-      if (btn_u_edge && sprite_row > 0) begin
-        sprite_row <= sprite_row - 1;
-        cooldown <= 500_000;
-      end
-      else if (btn_d_edge && sprite_row < GRID_SIZE-1) begin
-        sprite_row <= sprite_row + 1;
-        cooldown <= 500_000;
-      end
+      btn_l_prev <= btn_l_debounced;
+      btn_r_prev <= btn_r_debounced;
+      btn_u_prev <= btn_u_debounced;
+      btn_d_prev <= btn_d_debounced;
+
+      btn_l_debounced <= &btn_l_hist;
+      btn_r_debounced <= &btn_r_hist;
+      btn_u_debounced <= &btn_u_hist;
+      btn_d_debounced <= &btn_d_hist;
     end
   end
 
-  //––––––––––––––––––––––––––––––––––––––––––––––––
-  // compute top-left corner of sprite (pixel coords)
-  wire [9:0] sprite_x = GRID_LEFT + sprite_col * CELL_WIDTH;
-  wire [9:0] sprite_y = GRID_TOP  + sprite_row * CELL_HEIGHT;
+  // Edge detection
+  wire btn_l_edge = btn_l_debounced & ~btn_l_prev;
+  wire btn_r_edge = btn_r_debounced & ~btn_r_prev;
+  wire btn_u_edge = btn_u_debounced & ~btn_u_prev;
+  wire btn_d_edge = btn_d_debounced & ~btn_d_prev;
 
-  //––––––––––––––––––––––––––––––––––––––––––––––––
-  // detect VGA scan inside sprite area
+  //------------------------------------------------
+  // 1) Track sprite position in grid cells
+  //------------------------------------------------
+  reg [3:0] sprite_col = 0;
+  reg [3:0] sprite_row = 0;
+
+  always @(posedge clk) begin
+    if (btn_sample_tick) begin
+      if (btn_l_edge && sprite_col > 0)
+        sprite_col <= sprite_col - 1;
+      else if (btn_r_edge && sprite_col < GRID_SIZE-1)
+        sprite_col <= sprite_col + 1;
+
+      if (btn_u_edge && sprite_row > 0)
+        sprite_row <= sprite_row - 1;
+      else if (btn_d_edge && sprite_row < GRID_SIZE-1)
+        sprite_row <= sprite_row + 1;
+    end
+  end
+
+  //------------------------------------------------
+  // 2) Compute sprite positioning (no overlap)
+  //------------------------------------------------
+  // Position at 1px inside top/left lines
+  wire [9:0] sprite_x = GRID_LEFT + sprite_col * CELL_WIDTH + LINE_THICK;
+  wire [9:0] sprite_y = GRID_TOP  + sprite_row * CELL_HEIGHT + LINE_THICK;
+  // Shrink to avoid right/bottom lines
+  wire [9:0] adjusted_sprite_w = CELL_WIDTH  - (2 * LINE_THICK);
+  wire [9:0] adjusted_sprite_h = CELL_HEIGHT - (2 * LINE_THICK);
+
+  //------------------------------------------------
+  // 3) Detect when VGA scan is in the sprite area
+  //------------------------------------------------
   wire in_sprite = bright
     && (hCount >= sprite_x)
-    && (hCount <  sprite_x + SPRITE_W)
+    && (hCount <  sprite_x + adjusted_sprite_w)
     && (vCount >= sprite_y)
-    && (vCount <  sprite_y + SPRITE_H);
+    && (vCount <  sprite_y + adjusted_sprite_h);
 
-  // compute address into ROM
-  wire [9:0] sprite_addr =
-       (vCount - sprite_y) * SPRITE_W
-     + (hCount - sprite_x);
+  //------------------------------------------------
+  // 4) Compute sprite ROM address with scaling
+  //------------------------------------------------
+  // Map each display-pixel in adjusted area to full SPRITE_W×SPRITE_H ROM
+  wire [11:0] sprite_addr = 
+       ((vCount - sprite_y) * SPRITE_H / adjusted_sprite_h) * SPRITE_W
+     + ((hCount - sprite_x) * SPRITE_W / adjusted_sprite_w);
 
-  // pull color from sprite ROM
+  // Fetch color from ROM
   wire [11:0] sprite_color;
   sprite_rom rom (
     .clk   (clk),
@@ -101,8 +120,9 @@ module vga_bitchange(
     .color (sprite_color)
   );
 
-  //––––––––––––––––––––––––––––––––––––––––––––––––
-  // 2) Your existing grid logic
+  //------------------------------------------------
+  // 5) Grid rendering logic
+  //------------------------------------------------
   wire isV = bright
     && (hCount >= GRID_LEFT)
     && (hCount <  GRID_LEFT + CELL_WIDTH*GRID_SIZE)
@@ -117,22 +137,23 @@ module vga_bitchange(
     && (vCount >= GRID_TOP)
     && (vCount <  GRID_TOP  + CELL_HEIGHT*GRID_SIZE);
 
-  //––––––––––––––––––––––––––––––––––––––––––––––––
-  // 3) Final pixel mux: sprite > grid lines > grid fill > black
+  //------------------------------------------------
+  // 6) Final pixel mux: sprite > grid > background > black
+  //------------------------------------------------
   always @(*) begin
     if (!bright)
       rgb = BLACK;
     else if (in_sprite)
-      rgb = sprite_color;      // sprite on top
+      rgb = sprite_color;
     else if (isV || isH)
-      rgb = WHITE;             // grid lines
+      rgb = WHITE;
     else if (inGrid)
-      rgb = BLUE;              // grid background
+      rgb = BLUE;
     else
       rgb = BLACK;
   end
 
-  // static score (unchanged)
+  // Static score
   always @(posedge clk)
     score <= 0;
 

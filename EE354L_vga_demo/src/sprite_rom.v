@@ -1,23 +1,22 @@
 `timescale 1ns / 1ps
 module sprite_rom (
   input  wire        clk,
-  input  wire [9:0]  addr,        // address runs from 0 to (W*H-1)
-  output reg [11:0]  color        // 12-bit RGB
+  input  wire [11:0] addr,        // <<< changed from [9:0] to [11:0]
+  output reg  [11:0] color
 );
 
-  // change 64 and 64 to your PNG’s width & height
-  localparam integer W = 64, H = 48;
+  // Assuming your sprite is 64x48 = 3072 pixels
+  localparam integer W = 64;
+  localparam integer H = 48;
 
-  // declare a block RAM
-  reg [11:0] mem [0:W*H-1];
+  reg [11:0] mem [0:W*H-1];  // 0 to 3071
 
   initial begin
-    // this reads sprite.mem (the file you generated) into the RAM
     $readmemh("sprite.mem", mem);
   end
 
-  // synchronous read
-  always @(posedge clk)
+  always @(posedge clk) begin
     color <= mem[addr];
+  end
 
 endmodule

@@ -23,7 +23,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 module vga_top(
     input  wire        ClkPort,
-    // four‐way direction buttons for sprite movement
+    // four-way direction buttons for sprite movement
     input  wire        BtnL,
     input  wire        BtnR,
     input  wire        BtnU,
@@ -36,7 +36,7 @@ module vga_top(
     output wire [3:0]  vgaG,
     output wire [3:0]  vgaB,
 
-    // Seven‐segment outputs
+    // Seven-segment outputs
     output wire        An0,
     output wire        An1,
     output wire        An2,
@@ -58,9 +58,9 @@ module vga_top(
     output wire        QuadSpiFlashCS
 );
 
-    //––––––––––––––––––––––––––––––––––––––––––
+    //------------------------------------------
     // Internal nets
-    //––––––––––––––––––––––––––––––––––––––––––
+    //------------------------------------------
     wire        bright;
     wire [9:0]  hc, vc;
     wire [11:0] rgb;        // from vga_bitchange
@@ -68,9 +68,9 @@ module vga_top(
     wire [6:0]  ssdOut;
     wire [3:0]  anode;
 
-    //––––––––––––––––––––––––––––––––––––––––––
+    //------------------------------------------
     // VGA timing generator
-    //––––––––––––––––––––––––––––––––––––––––––
+    //------------------------------------------
     display_controller dc (
       .clk    (ClkPort),
       .hSync  (hSync),
@@ -80,9 +80,9 @@ module vga_top(
       .vCount (vc)
     );
 
-    //––––––––––––––––––––––––––––––––––––––––––
+    //------------------------------------------
     // Grid + sprite cursor logic
-    //––––––––––––––––––––––––––––––––––––––––––
+    //------------------------------------------
     vga_bitchange vbc (
       .clk    (ClkPort),
       .bright (bright),
@@ -96,9 +96,9 @@ module vga_top(
       .score  (score)
     );
 
-    //––––––––––––––––––––––––––––––––––––––––––
-    // Score → seven‐segment decoder
-    //––––––––––––––––––––––––––––––––––––––––––
+    //------------------------------------------
+    // Score → seven-segment decoder
+    //------------------------------------------
     counter cnt (
       .clk           (ClkPort),
       .displayNumber (score),
@@ -106,24 +106,24 @@ module vga_top(
       .ssdOut        (ssdOut)
     );
 
-    //––––––––––––––––––––––––––––––––––––––––––
-    // Seven‐segment wiring
-    //––––––––––––––––––––––––––––––––––––––––––
+    //------------------------------------------
+    // Seven-segment wiring
+    //------------------------------------------
     assign Dp = 1'b1;
     assign {Ca, Cb, Cc, Cd, Ce, Cf, Cg} = ssdOut;
     // only 4 digits used; pad upper 4 off
     assign {An7, An6, An5, An4, An3, An2, An1, An0} = {4'b1111, anode};
 
-    //––––––––––––––––––––––––––––––––––––––––––
+    //------------------------------------------
     // RGB(12) → VGA(4)
-    //––––––––––––––––––––––––––––––––––––––––––
+    //------------------------------------------
     assign vgaR = rgb[11:8];
     assign vgaG = rgb[7:4];
     assign vgaB = rgb[3:0];
 
-    //––––––––––––––––––––––––––––––––––––––––––
+    //------------------------------------------
     // Disable flash chip
-    //––––––––––––––––––––––––––––––––––––––––––
+    //------------------------------------------
     assign QuadSpiFlashCS = 1'b1;
 
 endmodule
