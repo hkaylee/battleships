@@ -38,7 +38,7 @@ module renderer(
   always @(*) begin
     if (!bright)
       rgb = BLACK;
-    else if (in_sprite && sprite_color != 12'h00F)
+    else if (in_sprite && sprite_color!=12'h00F)
       rgb = sprite_color;
     else if (isV || isH)
       rgb = WHITE;
