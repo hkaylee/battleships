@@ -113,3 +113,11 @@ set_property PACKAGE_PIN H14 [get_ports MemOE]
 set_property PACKAGE_PIN R11 [get_ports MemWR]					
 	set_property IOSTANDARD LVCMOS33 [get_ports MemWR]
 
+set_property PACKAGE_PIN P17 [get_ports BtnL]
+    	set_property IOSTANDARD LVCMOS33 [get_ports BtnL]
+
+set_property PACKAGE_PIN M17 [get_ports BtnR]
+    	set_property IOSTANDARD LVCMOS33 [get_ports BtnR]
+
+set_property PACKAGE_PIN P18 [get_ports BtnD]
+    	set_property IOSTANDARD LVCMOS33 [get_ports BtnD]
