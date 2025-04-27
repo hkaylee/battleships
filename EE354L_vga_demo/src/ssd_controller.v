@@ -29,19 +29,8 @@ module ssd_controller(
     endcase
   endfunction
 
-  reg [1:0] digit_sel;
-  always @(posedge clk) digit_sel <= digit_sel + 1;
-
   always @(*) begin
-    case(digit_sel)
-      2'd0: begin
-        anode = 8'b11111110;        // rightmost digit on
-        ssdOut = seg7(turns_left[3:0]);
-      end
-      default: begin
-        anode = 8'b11111111;        // all others off
-        ssdOut = 7'b1111111;
-      end
-    endcase
+    anode  = 8'b11111110;        // only last digit active
+    ssdOut = seg7(turns_left[3:0]);
   end
 endmodule
