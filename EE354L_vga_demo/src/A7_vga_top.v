@@ -1,30 +1,8 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    12:18:00 12/14/2017 
-// Design Name: 
-// Module Name:    vga_top 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
-//
-// Dependencies: 
-//
-// Revision: 
-// Revision 0.01 - File Created
-// Additional Comments: 
-//
-// Date: 04/04/2020
-// Author: Yue (Julien) Niu
-// Description: Port from NEXYS3 to NEXYS4
-//////////////////////////////////////////////////////////////////////////////////
-`timescale 1ns / 1ps
 module vga_top(
   input  wire        ClkPort,
   input  wire        BtnL, BtnR, BtnU, BtnD, BtnC,
+  input  wire        SW0,           // ← reset switch
   output wire        hSync, vSync,
   output wire [3:0]  vgaR, vgaG, vgaB,
   output wire [7:0]  Anodes,
@@ -38,7 +16,6 @@ module vga_top(
   wire [3:0]  sprite_row, sprite_col;
   wire [199:0] cell_status_flat;
   wire [4:0]  turns_left;
-  wire        win, lose;
 
   display_controller dc(
     .clk    (ClkPort),
@@ -72,14 +49,12 @@ module vga_top(
 
   game_state gs(
     .clk              (ClkPort),
-    .reset            (1'b0),
+    .reset            (SW0), 
     .btn_c            (BtnC),
     .sprite_row       (sprite_row),
     .sprite_col       (sprite_col),
     .cell_status_flat(cell_status_flat),
-    .turns_left       (turns_left),
-    .win              (win),
-    .lose             (lose)
+    .turns_left       (turns_left)
   );
 
   renderer rdr(
@@ -100,8 +75,6 @@ module vga_top(
   ssd_controller ssd(
     .clk        (ClkPort),
     .turns_left (turns_left),
-    .win        (win),
-    .lose       (lose),
     .anode      (Anodes),
     .ssdOut     (Segs)
   );

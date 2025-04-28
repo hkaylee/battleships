@@ -2,6 +2,7 @@
 module vga_top(
   input  wire        ClkPort,
   input  wire        BtnL, BtnR, BtnU, BtnD, BtnC,
+  input  wire        SW0,           // ← reset switch
   output wire        hSync, vSync,
   output wire [3:0]  vgaR, vgaG, vgaB,
   output wire [7:0]  Anodes,
@@ -48,7 +49,7 @@ module vga_top(
 
   game_state gs(
     .clk              (ClkPort),
-    .reset            (1'b0),
+    .reset            (SW0), 
     .btn_c            (BtnC),
     .sprite_row       (sprite_row),
     .sprite_col       (sprite_col),

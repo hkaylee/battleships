@@ -144,6 +144,10 @@ set_property PACKAGE_PIN K2  [get_ports {Anodes[6]}]
 set_property PACKAGE_PIN U13 [get_ports {Anodes[7]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {Anodes[*]}]
 
+## Switch 0 - program reset
+set_property PACKAGE_PIN J15 [get_ports SW0]
+set_property IOSTANDARD LVCMOS33 [get_ports SW0]
+
 
 
 

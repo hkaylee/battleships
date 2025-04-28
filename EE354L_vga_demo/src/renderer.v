@@ -1,36 +1,48 @@
 `timescale 1ns / 1ps
-module ssd_controller(
-  input  wire       clk,
-  input  wire [4:0] turns_left,
-  output reg [7:0]  anode,
-  output reg [6:0]  ssdOut
+module renderer(
+  input  wire        clk,
+  input  wire        bright,
+  input  wire [9:0]  hCount,
+  input  wire [9:0]  vCount,
+  input  wire [11:0] sprite_color,
+  input  wire        in_sprite,
+  input  wire [199:0] cell_status_flat,
+  output reg  [11:0] rgb
 );
-  // 7-seg hex encoding for 0-F
-  function [6:0] seg7;
-    input [3:0] val;
-    case(val)
-      4'h0: seg7 = 7'b1000000;
-      4'h1: seg7 = 7'b1111001;
-      4'h2: seg7 = 7'b0100100;
-      4'h3: seg7 = 7'b0110000;
-      4'h4: seg7 = 7'b0011001;
-      4'h5: seg7 = 7'b0010010;
-      4'h6: seg7 = 7'b0000010;
-      4'h7: seg7 = 7'b1111000;
-      4'h8: seg7 = 7'b0000000;
-      4'h9: seg7 = 7'b0010000;
-      4'hA: seg7 = 7'b0001000;
-      4'hB: seg7 = 7'b0000011;
-      4'hC: seg7 = 7'b1000110;
-      4'hD: seg7 = 7'b0100001;
-      4'hE: seg7 = 7'b0000110;
-      4'hF: seg7 = 7'b0001110;
-      default: seg7 = 7'b1111111;
+  localparam BLACK=12'h000, WHITE=12'hFFF, BLUE=12'h00F,
+             GRAY=12'h888, RED=12'hF00;
+  localparam integer GRID_LEFT=144, GRID_TOP=35,
+                     CELL_WIDTH=64, CELL_HEIGHT=48,
+                     LINE_THICK=1;
+
+  wire inGrid = bright &&
+                (hCount>=GRID_LEFT) && (hCount<GRID_LEFT+CELL_WIDTH*10) &&
+                (vCount>=GRID_TOP)  && (vCount<GRID_TOP +CELL_HEIGHT*10);
+  wire [3:0] row = (vCount - GRID_TOP) / CELL_HEIGHT;
+  wire [3:0] col = (hCount - GRID_LEFT) / CELL_WIDTH;
+  wire isV = inGrid && (((hCount - GRID_LEFT) % CELL_WIDTH) < LINE_THICK);
+  wire isH = inGrid && (((vCount - GRID_TOP) % CELL_HEIGHT) < LINE_THICK);
+
+  wire [1:0] status = inGrid ? cell_status_flat[(row*10+col)*2 +: 2] : 2'b00;
+  reg  [11:0] bg;
+  always @(*) begin
+    case(status)
+      2'b00: bg = BLUE;   // water
+      2'b01: bg = GRAY;   // miss
+      2'b10: bg = BLACK;  // hit
+      2'b11: bg = RED;    // sunk
+      default: bg = BLUE;
     endcase
-  endfunction
+  end
 
   always @(*) begin
-    anode  = 8'b11111110;        // only last digit active
-    ssdOut = seg7(turns_left[3:0]);
+    if (!bright)
+      rgb = BLACK;
+    else if (in_sprite && sprite_color!=12'h00F)
+      rgb = sprite_color;
+    else if (isV || isH)
+      rgb = WHITE;
+    else
+      rgb = bg;
   end
 endmodule
