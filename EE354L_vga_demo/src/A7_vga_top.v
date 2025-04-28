@@ -21,109 +21,90 @@
 // Author: Yue (Julien) Niu
 // Description: Port from NEXYS3 to NEXYS4
 //////////////////////////////////////////////////////////////////////////////////
+`timescale 1ns / 1ps
 module vga_top(
-    input  wire        ClkPort,
-    // four-way direction buttons for sprite movement
-    input  wire        BtnL,
-    input  wire        BtnR,
-    input  wire        BtnU,
-    input  wire        BtnD,
-
-    // VGA outputs
-    output wire        hSync,
-    output wire        vSync,
-    output wire [3:0]  vgaR,
-    output wire [3:0]  vgaG,
-    output wire [3:0]  vgaB,
-
-    // Seven-segment outputs
-    output wire        An0,
-    output wire        An1,
-    output wire        An2,
-    output wire        An3,
-    output wire        An4,
-    output wire        An5,
-    output wire        An6,
-    output wire        An7,
-    output wire        Ca,
-    output wire        Cb,
-    output wire        Cc,
-    output wire        Cd,
-    output wire        Ce,
-    output wire        Cf,
-    output wire        Cg,
-    output wire        Dp,
-
-    // Flash chip disable
-    output wire        QuadSpiFlashCS
+  input  wire        ClkPort,
+  input  wire        BtnL, BtnR, BtnU, BtnD, BtnC,
+  output wire        hSync, vSync,
+  output wire [3:0]  vgaR, vgaG, vgaB,
+  output wire [7:0]  Anodes,
+  output wire [6:0]  Segs,
+  output wire        QuadSpiFlashCS
 );
+  wire        bright;
+  wire [9:0]  hc, vc;
+  wire [11:0] rgb_pix, sprite_color;
+  wire        in_sprite;
+  wire [3:0]  sprite_row, sprite_col;
+  wire [199:0] cell_status_flat;
+  wire [4:0]  turns_left;
+  wire        win, lose;
 
-    //------------------------------------------
-    // Internal nets
-    //------------------------------------------
-    wire        bright;
-    wire [9:0]  hc, vc;
-    wire [11:0] rgb;        // from vga_bitchange
-    wire [15:0] score;
-    wire [6:0]  ssdOut;
-    wire [3:0]  anode;
+  display_controller dc(
+    .clk    (ClkPort),
+    .hSync  (hSync),
+    .vSync  (vSync),
+    .bright (bright),
+    .hCount (hc),
+    .vCount (vc)
+  );
 
-    //------------------------------------------
-    // VGA timing generator
-    //------------------------------------------
-    display_controller dc (
-      .clk    (ClkPort),
-      .hSync  (hSync),
-      .vSync  (vSync),
-      .bright (bright),
-      .hCount (hc),
-      .vCount (vc)
-    );
+  vga_bitchange cursor_control(
+    .clk        (ClkPort),
+    .bright     (bright),
+    .hCount     (hc),
+    .vCount     (vc),
+    .btn_l      (BtnL),
+    .btn_r      (BtnR),
+    .btn_u      (BtnU),
+    .btn_d      (BtnD),
+    .rgb        (),
+    .sprite_row (sprite_row),
+    .sprite_col (sprite_col),
+    .in_sprite  (in_sprite)
+  );
 
-    //------------------------------------------
-    // Grid + sprite cursor logic
-    //------------------------------------------
-    vga_bitchange vbc (
-      .clk    (ClkPort),
-      .bright (bright),
-      .hCount (hc),
-      .vCount (vc),
-      .btn_l  (BtnL),
-      .btn_r  (BtnR),
-      .btn_u  (BtnU),
-      .btn_d  (BtnD),
-      .rgb    (rgb),
-      .score  (score)
-    );
+  sprite_rom rom(
+    .clk   (ClkPort),
+    .addr  (in_sprite ? ((vc - (35 + sprite_row*48 + 1))*64 + (hc - (144 + sprite_col*64 + 1))) : 12'd0),
+    .color (sprite_color)
+  );
 
-    //------------------------------------------
-    // Score → seven-segment decoder
-    //------------------------------------------
-    counter cnt (
-      .clk           (ClkPort),
-      .displayNumber (score),
-      .anode         (anode),
-      .ssdOut        (ssdOut)
-    );
+  game_state gs(
+    .clk              (ClkPort),
+    .reset            (1'b0),
+    .btn_c            (BtnC),
+    .sprite_row       (sprite_row),
+    .sprite_col       (sprite_col),
+    .cell_status_flat(cell_status_flat),
+    .turns_left       (turns_left),
+    .win              (win),
+    .lose             (lose)
+  );
 
-    //------------------------------------------
-    // Seven-segment wiring
-    //------------------------------------------
-    assign Dp = 1'b1;
-    assign {Ca, Cb, Cc, Cd, Ce, Cf, Cg} = ssdOut;
-    // only 4 digits used; pad upper 4 off
-    assign {An7, An6, An5, An4, An3, An2, An1, An0} = {4'b1111, anode};
+  renderer rdr(
+    .clk              (ClkPort),
+    .bright           (bright),
+    .hCount           (hc),
+    .vCount           (vc),
+    .sprite_color     (sprite_color),
+    .in_sprite        (in_sprite),
+    .cell_status_flat(cell_status_flat),
+    .rgb              (rgb_pix)
+  );
 
-    //------------------------------------------
-    // RGB(12) → VGA(4)
-    //------------------------------------------
-    assign vgaR = rgb[11:8];
-    assign vgaG = rgb[7:4];
-    assign vgaB = rgb[3:0];
+  assign vgaR = rgb_pix[11:8];
+  assign vgaG = rgb_pix[7 :4];
+  assign vgaB = rgb_pix[3 :0];
 
-    //------------------------------------------
-    // Disable flash chip
-    //------------------------------------------
-    assign QuadSpiFlashCS = 1'b1;
+  ssd_controller ssd(
+    .clk        (ClkPort),
+    .turns_left (turns_left),
+    .win        (win),
+    .lose       (lose),
+    .anode      (Anodes),
+    .ssdOut     (Segs)
+  );
 
+  assign QuadSpiFlashCS = 1;
 endmodule
