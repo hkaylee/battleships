@@ -15,7 +15,6 @@ module vga_top(
   wire [3:0]  sprite_row, sprite_col;
   wire [199:0] cell_status_flat;
   wire [4:0]  turns_left;
-  wire        win, lose;
 
   display_controller dc(
     .clk    (ClkPort),
@@ -54,9 +53,7 @@ module vga_top(
     .sprite_row       (sprite_row),
     .sprite_col       (sprite_col),
     .cell_status_flat(cell_status_flat),
-    .turns_left       (turns_left),
-    .win              (win),
-    .lose             (lose)
+    .turns_left       (turns_left)
   );
 
   renderer rdr(
@@ -77,8 +74,6 @@ module vga_top(
   ssd_controller ssd(
     .clk        (ClkPort),
     .turns_left (turns_left),
-    .win        (win),
-    .lose       (lose),
     .anode      (Anodes),
     .ssdOut     (Segs)
   );
