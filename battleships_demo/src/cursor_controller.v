@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-module vga_bitchange(
+module cursor_controller(
     input  wire        clk,
     input  wire        bright,
     input  wire [9:0]  hCount,

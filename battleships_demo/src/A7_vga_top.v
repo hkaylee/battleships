@@ -34,7 +34,7 @@ module A7_vga_top(
   );
 
   // 2) Cursor control / sprite position
-  vga_bitchange cursor_control(
+  cursor_controller cursor_control(
     .clk        (ClkPort),
     .bright     (bright),
     .hCount     (hc),
