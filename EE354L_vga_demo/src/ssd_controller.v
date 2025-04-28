@@ -2,6 +2,7 @@
 module ssd_controller(
   input  wire       clk,
   input  wire [4:0] turns_left,
+  input  wire [2:0] ships_remaining,  // NEW: Input for remaining ships
   output reg [7:0]  anode,
   output reg [6:0]  ssdOut
 );
@@ -29,8 +30,24 @@ module ssd_controller(
     endcase
   endfunction
 
+  // Add a simple counter for multiplexing between displays
+  reg [15:0] refresh_cnt;
+  always @(posedge clk) begin
+    refresh_cnt <= refresh_cnt + 1;
+  end
+  
+  // Use the MSB of the counter to alternate between displays
+  wire display_select = refresh_cnt[15];
+
   always @(*) begin
-    anode  = 8'b11111110;        // only last digit active
-    ssdOut = seg7(turns_left[3:0]);
+    if (display_select) begin
+      // Display turns_left on SSD0
+      anode = 8'b11111110;  // Activate SSD0
+      ssdOut = seg7(turns_left[3:0]);
+    end else begin
+      // Display ships_remaining on SSD5
+      anode = 8'b11101111; // SSD4 active
+      ssdOut = seg7({1'b0, ships_remaining});  // Zero-extend to 4 bits
+    end
   end
 endmodule
