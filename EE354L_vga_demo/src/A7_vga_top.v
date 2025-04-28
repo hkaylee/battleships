@@ -3,6 +3,7 @@ module A7_vga_top(
   input  wire        ClkPort,
   input  wire        BtnL, BtnR, BtnU, BtnD, BtnC,
   input  wire        SW0,            // ← reset switch
+  input  wire        SW1,
   output wire        hSync, vSync,
   output wire [3:0]  vgaR, vgaG, vgaB,
   output wire [7:0]  Anodes,
@@ -64,6 +65,7 @@ module A7_vga_top(
     .btn_c             (BtnC),
     .sprite_row        (sprite_row),
     .sprite_col        (sprite_col),
+    .show_answer       (SW1),
     .cell_status_flat  (cell_status_flat),
     .turns_left        (turns_left),
     .ships_remaining   (ships_remaining)  // ← NEW port

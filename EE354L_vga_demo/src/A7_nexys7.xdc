@@ -148,6 +148,8 @@ set_property IOSTANDARD LVCMOS33 [get_ports {Anodes[*]}]
 set_property PACKAGE_PIN J15 [get_ports SW0]
 set_property IOSTANDARD LVCMOS33 [get_ports SW0]
 
+set_property PACKAGE_PIN L16 [get_ports {SW1}]
+set_property IOSTANDARD LVCMOS33 [get_ports {SW1}]
 
 
 
