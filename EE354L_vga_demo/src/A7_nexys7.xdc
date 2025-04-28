@@ -113,11 +113,37 @@ set_property PACKAGE_PIN H14 [get_ports MemOE]
 set_property PACKAGE_PIN R11 [get_ports MemWR]					
 	set_property IOSTANDARD LVCMOS33 [get_ports MemWR]
 
+# Add new button mappings
 set_property PACKAGE_PIN P17 [get_ports BtnL]
-    	set_property IOSTANDARD LVCMOS33 [get_ports BtnL]
+    set_property IOSTANDARD LVCMOS33 [get_ports BtnL]
 
 set_property PACKAGE_PIN M17 [get_ports BtnR]
-    	set_property IOSTANDARD LVCMOS33 [get_ports BtnR]
+    set_property IOSTANDARD LVCMOS33 [get_ports BtnR]
 
 set_property PACKAGE_PIN P18 [get_ports BtnD]
-    	set_property IOSTANDARD LVCMOS33 [get_ports BtnD]
+    set_property IOSTANDARD LVCMOS33 [get_ports BtnD]
+    
+# SSD segments
+set_property PACKAGE_PIN T10 [get_ports {Segs[0]}]
+set_property PACKAGE_PIN R10 [get_ports {Segs[1]}]
+set_property PACKAGE_PIN K16 [get_ports {Segs[2]}]
+set_property PACKAGE_PIN K13 [get_ports {Segs[3]}]
+set_property PACKAGE_PIN P15 [get_ports {Segs[4]}]
+set_property PACKAGE_PIN T11 [get_ports {Segs[5]}]
+set_property PACKAGE_PIN L18 [get_ports {Segs[6]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {Segs[*]}]
+
+# SSD anodes
+set_property PACKAGE_PIN J17 [get_ports {Anodes[0]}]
+set_property PACKAGE_PIN J18 [get_ports {Anodes[1]}]
+set_property PACKAGE_PIN T9  [get_ports {Anodes[2]}]
+set_property PACKAGE_PIN J14 [get_ports {Anodes[3]}]
+set_property PACKAGE_PIN P14 [get_ports {Anodes[4]}]
+set_property PACKAGE_PIN T14 [get_ports {Anodes[5]}]
+set_property PACKAGE_PIN K2  [get_ports {Anodes[6]}]
+set_property PACKAGE_PIN U13 [get_ports {Anodes[7]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {Anodes[*]}]
+
+
+
+
